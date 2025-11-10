@@ -1,4 +1,3 @@
-%%writefile app.py
 import streamlit as st
 import numpy as np
 from env import RuralEnv
@@ -75,3 +74,4 @@ for i in range(n_episodes):
     hospital_zones = [h["zone"] for h in info["hospitals"]]
     st.text(draw_grid(patient_zone, ambulance_zone, hospital_zones))
     st.write("---")
+
