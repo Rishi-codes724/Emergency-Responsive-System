@@ -1,4 +1,3 @@
-%%writefile env.py
 # env.py
 import random
 import numpy as np
@@ -157,4 +156,5 @@ class RuralEnv:
             "ambulances": self.ambulances,
             "hospitals": self.hospitals
         }
+
         return s
