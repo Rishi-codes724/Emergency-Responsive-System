@@ -1,4 +1,3 @@
-%%writefile train.py
 # train.py
 import os
 import numpy as np
@@ -47,4 +46,5 @@ def train(episodes=5000, report_every=500):
     print("Training complete. Q-table and reward curve saved in results/")
 
 if __name__ == "__main__":
+
     train(episodes=5000, report_every=500)
