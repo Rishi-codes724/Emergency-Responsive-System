@@ -1,4 +1,3 @@
-%%writefile data_generator.py
 # data_generator.py
 import random
 import math
@@ -84,5 +83,6 @@ def generate_patient(zones=None):
     possible_specs = ["trauma","cardiac","maternity","pediatrics", None]
     required_specialty = random.choices(possible_specs, weights=[0.15,0.15,0.10,0.10,0.5])[0]
     return {"zone": z, "severity": severity, "required_specialty": required_specialty}
+
 
 
