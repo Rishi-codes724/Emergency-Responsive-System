@@ -1,4 +1,3 @@
-%%writefile rl_agent.py
 # rl_agent.py
 import numpy as np
 import random
@@ -31,4 +30,5 @@ class QLearningAgent:
         # decay epsilon
         if self.epsilon > self.min_epsilon:
             self.epsilon *= self.decay
+
             self.epsilon = max(self.epsilon, self.min_epsilon)
