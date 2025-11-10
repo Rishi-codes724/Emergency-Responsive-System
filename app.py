@@ -1,67 +1,77 @@
-# app.py
+%%writefile app.py
 import streamlit as st
 import numpy as np
-import time
 from env import RuralEnv
-from rl_agent import QLearningAgent
 
-st.set_page_config(page_title="Emergency Response System (RL)", layout="wide")
+st.title("Smart Ambulance Dispatch Simulator")
+st.write("Simulation of RL-based ambulance dispatch considering hospital beds and specialties.")
 
-st.title("🚑 Emergency Response System using Reinforcement Learning")
-st.markdown("""
-This demo simulates ambulance–hospital dispatch optimization in a rural region using **Q-learning**.
-""")
+# Slider to select number of demo episodes
+n_episodes = st.slider("Number of Demo Episodes:", 1, 10, 3)
 
-# Sidebar controls
-st.sidebar.header("Simulation Controls")
-episodes = st.sidebar.slider("Number of Training Episodes", 100, 5000, 1000, step=100)
-alpha = st.sidebar.slider("Learning Rate (α)", 0.01, 1.0, 0.1)
-gamma = st.sidebar.slider("Discount Factor (γ)", 0.1, 1.0, 0.98)
-epsilon = st.sidebar.slider("Exploration Rate (ε)", 0.01, 1.0, 0.2)
+# Load trained Q-table if exists
+try:
+    Q = np.load("results/q_table.npy")
+    st.success("Trained Q-table loaded!")
+except:
+    Q = None
+    st.warning("No Q-table found. Using default actions.")
 
-# Environment setup
-env = RuralEnv()
-agent = QLearningAgent(env.n_states, env.action_space, alpha=alpha, gamma=gamma, epsilon=epsilon)
+# Initialize environment
+env = RuralEnv(grid=(4,4), n_hospitals=6, n_ambulances=3)
 
-if st.button("🧠 Train Agent"):
-    st.write("Training agent... please wait ⏳")
-    rewards = []
-    progress = st.progress(0)
-    for ep in range(episodes):
-        s = env.reset()
-        done = False
-        total_r = 0
-        while not done:
-            a = agent.select_action(s)
-            s_next, r, done, info = env.step(a)
-            agent.learn(s, a, r, s_next)
-            total_r += r
-            s = s_next
-        rewards.append(total_r)
-        progress.progress((ep+1)/episodes)
-    st.success("Training completed ✅")
-    st.line_chart(rewards, x_label="Episode", y_label="Reward")
+# Function to visualize 4x4 grid
+def draw_grid(patient_zone, ambulance_zone=None, hospital_zones=[]):
+    rows, cols = 4,4
+    grid = [["⬜" for _ in range(cols)] for _ in range(rows)]
+    pr, pc = patient_zone // cols, patient_zone % cols
+    grid[pr][pc] = "🧍"  # Patient
 
-st.divider()
-st.header("🚨 Test the Trained Agent")
+    if ambulance_zone is not None:
+        ar, ac = ambulance_zone // cols, ambulance_zone % cols
+        grid[ar][ac] = "🚑"  # Ambulance
 
-if st.button("Run Simulation"):
+    for hz in hospital_zones:
+        hr, hc = hz // cols, hz % cols
+        if grid[hr][hc] == "⬜":
+            grid[hr][hc] = "🏥"
+        else:
+            grid[hr][hc] += "🏥"
+    return "\n".join([" ".join(row) for row in grid])
+
+# Run demo episodes
+for i in range(n_episodes):
     state = env.reset()
-    s_readable = env.render_state_readable()
-    st.subheader("Initial Scenario")
-    st.json(s_readable["patient"])
-    st.json({"Ambulances": s_readable["ambulances"], "Hospitals": s_readable["hospitals"]})
+    info = env.render_state_readable()
+    st.subheader(f"Episode {i+1}")
 
-    a = agent.select_action(state)
-    s_next, r, done, info = env.step(a)
-    st.subheader("Result")
-    st.write(f"**Action chosen:** Ambulance #{info['ambulance']} → Hospital #{info['hospital']}")
-    st.write(f"**Reward:** {r:.2f}")
-    st.write(f"**Success:** {info['success']}")
-    st.write(f"**Reason:** {info['reason'] or 'N/A'}")
-    st.write(f"**Travel time (min):** {info['travel_time_min']:.1f}")
+    # Display patient
+    st.write("**Patient:**", info["patient"])
+    # Display ambulances
+    st.write("**Ambulances (id, zone):**", [(a['id'], a['zone']) for a in info['ambulances']])
+    # Display hospitals
+    st.write("**Hospitals summary:**")
+    for h in info['hospitals']:
+        st.write(f"H{h['id']} | Zone: {h['zone']} | Beds: {h['available_beds']}/{h['total_beds']} | ICU: {h['icu_available']} | Specialties: {h['specialties']}")
 
-    st.success("Simulation completed ✅")
+    # Agent selects action using Q-table
+    if Q is not None:
+        row = Q[state]
+        action = int(np.argmax(row))
+    else:
+        action = 0
 
-st.markdown("---")
-st.caption("Built with ❤️ using Streamlit and Reinforcement Learning")
+    amb_idx = action // env.n_hospitals
+    hosp_idx = action % env.n_hospitals
+    st.write("**Agent selected action:** Ambulance", amb_idx, "→ Hospital", hosp_idx)
+
+    # Step environment
+    ns, reward, done, step_info = env.step(action)
+    st.write("**Result:**", step_info, "| **Reward:**", reward)
+
+    # Draw 4x4 grid
+    patient_zone = info["patient"]["zone"]
+    ambulance_zone = info["ambulances"][amb_idx]["zone"]
+    hospital_zones = [h["zone"] for h in info["hospitals"]]
+    st.text(draw_grid(patient_zone, ambulance_zone, hospital_zones))
+    st.write("---")
