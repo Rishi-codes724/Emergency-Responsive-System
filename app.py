@@ -2,7 +2,7 @@
 import streamlit as st
 import random
 import time
-from rl_agent import QLearningAgent as RLAgent
+from rl_agent import QLearningAgent 
 from env import RuralEnv
 
 # --------------------------------------------------
@@ -162,4 +162,5 @@ else:
     st.info(
         "Select emergency details above and press **Find Help** to start the simulation."
     )
+
 
