@@ -1,505 +1,372 @@
+# app.py
 import streamlit as st
 import numpy as np
 import pandas as pd
-import plotly.graph_objects as go
-import plotly.express as px
-from env import RuralEnv
 import time
 from datetime import datetime
 
-# Page configuration
-st.set_page_config(
-    page_title="Smart Ambulance Dispatch",
-    page_icon="🚑",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# plotting
+import plotly.graph_objects as go
+import plotly.express as px
 
-# Custom CSS for better styling
-st.markdown("""
-<style>
-    .main-header {
-        font-size: 3rem;
-        font-weight: bold;
-        color: #1f77b4;
+# your environment (simulation)
+from env import RuralEnv
+
+# ---------------------------
+# Page config & CSS (simple)
+# ---------------------------
+st.set_page_config(page_title="Emergency Response Simulator", page_icon="🚑", layout="wide")
+
+st.markdown(
+    """
+    <style>
+    .title {
+        font-size: 32px;
+        font-weight: 700;
+        color: #0B62A4;
         text-align: center;
-        margin-bottom: 1rem;
+        margin-bottom: 4px;
     }
-    .sub-header {
-        font-size: 1.2rem;
+    .subtitle {
+        font-size: 14px;
         color: #666;
         text-align: center;
-        margin-bottom: 2rem;
+        margin-bottom: 16px;
     }
-    .metric-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1.5rem;
+    .big-card {
+        background: linear-gradient(90deg,#f8fbff,#eef6ff);
+        padding: 12px;
         border-radius: 10px;
-        color: white;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.06);
     }
-    .success-card {
-        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-        padding: 1rem;
-        border-radius: 10px;
-        color: white;
-        margin: 1rem 0;
+    .large-btn {
+        font-size: 16px;
+        padding: 8px 12px;
     }
-    .failure-card {
-        background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
-        padding: 1rem;
-        border-radius: 10px;
-        color: white;
-        margin: 1rem 0;
+    .eta-badge {
+        font-weight:700;
+        padding:6px 10px;
+        border-radius:8px;
     }
-    .info-box {
-        background-color: #f0f2f6;
-        padding: 1rem;
-        border-radius: 8px;
-        border-left: 4px solid #1f77b4;
-        margin: 1rem 0;
-    }
-    .grid-container {
-        display: flex;
-        justify-content: center;
-        font-size: 2rem;
-        margin: 2rem 0;
-    }
-    .stProgress > div > div > div > div {
-        background-color: #667eea;
-    }
-</style>
-""", unsafe_allow_html=True)
+    </style>
+    """, unsafe_allow_html=True
+)
 
-# Initialize session state
-if 'simulation_history' not in st.session_state:
+st.markdown('<div class="title">🚑 Emergency Response Simulator (Rural)</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">Find nearby ambulances & hospitals by specialty — simple, fast, and visual.</div>', unsafe_allow_html=True)
+
+# ---------------------------
+# Constants & specialties
+# ---------------------------
+SPECIALTIES = [
+    "General", "Cardiology", "Neurology", "Gynecology", "ICU", "Orthopedic", "Pediatrics"
+]
+
+# how many minutes per grid hop (manhattan distance). Tuneable.
+ETA_PER_HOP_MIN = 5
+
+# ---------------------------
+# Session state init
+# ---------------------------
+if "simulation_history" not in st.session_state:
     st.session_state.simulation_history = []
-if 'total_simulations' not in st.session_state:
-    st.session_state.total_simulations = 0
-if 'success_count' not in st.session_state:
+
+if "total_runs" not in st.session_state:
+    st.session_state.total_runs = 0
+
+if "success_count" not in st.session_state:
     st.session_state.success_count = 0
 
-# Header
-st.markdown('<div class="main-header">🚑 Smart Ambulance Dispatch Simulator</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">AI-Powered Emergency Response System using Reinforcement Learning</div>', unsafe_allow_html=True)
+if "show_analytics" not in st.session_state:
+    st.session_state.show_analytics = False
 
-# Sidebar Configuration
+# ---------------------------
+# Sidebar - Controls
+# ---------------------------
 with st.sidebar:
-    st.image("https://img.icons8.com/clouds/200/ambulance.png", width=150)
-    st.header("⚙️ Configuration")
-    
-    # Simulation settings
-    st.subheader("Simulation Settings")
-    n_episodes = st.slider("Number of Episodes", 1, 10, 2, help="Number of emergency scenarios to simulate")
-    animation_speed = st.slider("Animation Speed", 0.5, 3.0, 1.0, 0.5, help="Seconds between episodes")
-    
-    # Environment settings
-    st.subheader("Environment Setup")
-    n_hospitals = st.selectbox("Number of Hospitals", [5, 6, 7, 8], index=1)
-    n_ambulances = st.selectbox("Number of Ambulances", [2, 3, 4, 5], index=1)
-    grid_size = st.selectbox("Grid Size", ["4x4", "5x5", "6x6"], index=0)
-    
-    # Advanced options
-    with st.expander("🔧 Advanced Options"):
-        show_detailed_logs = st.checkbox("Show Detailed Logs", value=False)
-        auto_run = st.checkbox("Auto-run Simulation", value=False)
-        show_probabilities = st.checkbox("Show Decision Probabilities", value=False)
-    
-    st.divider()
-    
-    # Statistics
-    st.subheader("📊 Session Statistics")
-    col1, col2 = st.columns(2)
-    with col1:
-        st.metric("Total Runs", st.session_state.total_simulations)
-    with col2:
-        success_rate = (st.session_state.success_count / st.session_state.total_simulations * 100) if st.session_state.total_simulations > 0 else 0
-        st.metric("Success Rate", f"{success_rate:.1f}%")
-    
-    if st.button("🔄 Reset Statistics", use_container_width=True):
+    st.header("Configuration")
+    st.markdown("**Simulation Settings**")
+    n_episodes = st.slider("Number of emergencies", 1, 10, 2, help="How many simulated emergencies to run")
+    n_hospitals = st.selectbox("Number of hospitals (max 2)", [1, 2], index=1)
+    n_ambulances = st.selectbox("Number of ambulances (1-3)", [1, 2, 3], index=1)
+    grid_size = st.selectbox("Grid size", ["4x4", "5x5", "6x6"], index=1)
+    grid_rows, grid_cols = map(int, grid_size.split("x"))
+    st.markdown("---")
+    st.markdown("**Emergency Input**")
+    severity = st.radio("Severity", options=["Low", "Medium", "High"], index=2, horizontal=True)
+    required_specialty = st.selectbox("Required specialty", SPECIALTIES, index=0)
+    st.markdown("---")
+    st.markdown("**Display Options**")
+    top_k = st.slider("Top ambulances to show", 1, min(3, n_ambulances), min(2, n_ambulances))
+    show_grid_map = st.checkbox("Show grid map", value=True)
+    show_analytics = st.checkbox("Show analytics tab", value=False)
+    st.markdown("---")
+    if st.button("🔄 Reset Session", use_container_width=True):
         st.session_state.simulation_history = []
-        st.session_state.total_simulations = 0
+        st.session_state.total_runs = 0
         st.session_state.success_count = 0
-        st.rerun()
+        st.experimental_rerun()
 
-# Parse grid size
-grid_rows, grid_cols = map(int, grid_size.split('x'))
-
-# Load Q-table
-q_table_loaded = False
+# ---------------------------
+# Load Q-table if available
+# ---------------------------
+Q = None
 try:
     Q = np.load("results/q_table.npy")
-    q_table_loaded = True
-    st.success("✅ Trained Q-table loaded successfully!")
-except:
-    Q = None
-    st.warning("⚠️ No trained Q-table found. Using random policy for demonstration.")
+    st.sidebar.success("Loaded trained Q-table")
+except Exception:
+    st.sidebar.info("No Q-table found — simulation will use a simple policy")
 
+# ---------------------------
 # Initialize environment
+# ---------------------------
 env = RuralEnv(grid=(grid_rows, grid_cols), n_hospitals=n_hospitals, n_ambulances=n_ambulances)
 
-def draw_grid_visual(patient_zone, ambulance_zone=None, hospital_zones=[], selected_hospital=None):
-    """Create an enhanced visual grid representation"""
-    rows, cols = grid_rows, grid_cols
+# ---------------------------
+# Utility functions
+# ---------------------------
+def manhattan(a_zone, b_zone, cols):
+    """Compute manhattan distance in grid given zone index and number of columns"""
+    ar, ac = a_zone // cols, a_zone % cols
+    br, bc = b_zone // cols, b_zone % cols
+    return abs(ar - br) + abs(ac - bc)
+
+def eta_minutes(distance_hops):
+    return int(distance_hops * ETA_PER_HOP_MIN)
+
+def get_top_ambulances(patient_zone, ambulances, top_k=3, cols=4):
+    """Return ambulances sorted by ETA (ascending) with computed eta and distance."""
+    items = []
+    for a in ambulances:
+        dist = manhattan(patient_zone, a["zone"], cols)
+        eta = eta_minutes(dist)
+        items.append({**a, "dist_hops": dist, "eta_min": eta})
+    items_sorted = sorted(items, key=lambda x: x["eta_min"])
+    return items_sorted[:top_k], items_sorted
+
+def draw_grid(patient_zone, ambulance_list, hospital_list, selected_ambulance=None, selected_hospital=None, rows=4, cols=4):
+    """Return a textual grid view with emoji markers for quick display."""
     grid = [["⬜" for _ in range(cols)] for _ in range(rows)]
-    
-    # Place patient
+    # patient
     pr, pc = patient_zone // cols, patient_zone % cols
-    grid[pr][pc] = "🧍‍♂️"
-    
-    # Place ambulance
-    if ambulance_zone is not None:
-        ar, ac = ambulance_zone // cols, ambulance_zone % cols
-        if grid[ar][ac] == "⬜":
-            grid[ar][ac] = "🚑"
-        else:
-            grid[ar][ac] = grid[ar][ac] + "🚑"
-    
-    # Place hospitals
-    for idx, hz in enumerate(hospital_zones):
-        hr, hc = hz // cols, hz % cols
+    grid[pr][pc] = "🧍"
+    # hospitals
+    for idx, h in enumerate(hospital_list):
+        hr, hc = h["zone"] // cols, h["zone"] % cols
+        icon = "🏥"
+        if required_specialty != "General" and required_specialty in [s.title() for s, v in h["specialties"].items() if v]:
+            icon = "🏥✨"  # highlight hospitals matching specialty
         if selected_hospital is not None and idx == selected_hospital:
-            hospital_icon = "🏥✨"  # Highlight selected hospital
-        else:
-            hospital_icon = "🏥"
-        
+            icon = icon + "🔶"
+        # append if already something there
         if grid[hr][hc] == "⬜":
-            grid[hr][hc] = hospital_icon
+            grid[hr][hc] = icon
         else:
-            grid[hr][hc] = grid[hr][hc] + hospital_icon
-    
-    return "\n".join([" ".join(row) for row in grid])
+            grid[hr][hc] = grid[hr][hc] + icon
+    # ambulances
+    for a in ambulance_list:
+        ar, ac = a["zone"] // cols, a["zone"] % cols
+        icon = "🚑"
+        if selected_ambulance is not None and a["id"] == selected_ambulance:
+            icon = icon + "⭐"
+        if grid[ar][ac] == "⬜":
+            grid[ar][ac] = icon
+        else:
+            grid[ar][ac] = grid[ar][ac] + icon
+    return "\n".join([" ".join(r) for r in grid])
 
-def create_distance_heatmap(patient_zone, ambulance_zones, hospital_zones):
-    """Create a heatmap showing distances"""
-    rows, cols = grid_rows, grid_cols
-    heatmap_data = np.zeros((rows, cols))
-    
-    pr, pc = patient_zone // cols, patient_zone % cols
-    
-    for r in range(rows):
-        for c in range(cols):
-            dist = abs(r - pr) + abs(c - pc)
-            heatmap_data[r][c] = dist
-    
-    fig = go.Figure(data=go.Heatmap(
-        z=heatmap_data,
-        colorscale='RdYlGn_r',
-        showscale=True,
-        colorbar=dict(title="Distance")
-    ))
-    
-    # Add markers
-    fig.add_trace(go.Scatter(
-        x=[pc], y=[pr],
-        mode='markers+text',
-        marker=dict(size=20, color='red', symbol='circle'),
-        text=['Patient'],
-        textposition='top center',
-        name='Patient'
-    ))
-    
-    for az in ambulance_zones:
-        ar, ac = az // cols, az % cols
-        fig.add_trace(go.Scatter(
-            x=[ac], y=[ar],
-            mode='markers+text',
-            marker=dict(size=15, color='blue', symbol='square'),
-            text=['Ambulance'],
-            textposition='bottom center',
-            name='Ambulance'
-        ))
-    
-    for hz in hospital_zones:
-        hr, hc = hz // cols, hz % cols
-        fig.add_trace(go.Scatter(
-            x=[hc], y=[hr],
-            mode='markers+text',
-            marker=dict(size=15, color='green', symbol='cross'),
-            text=['Hospital'],
-            textposition='top center',
-            name='Hospital'
-        ))
-    
-    fig.update_layout(
-        title="Distance Heatmap (Manhattan Distance)",
-        xaxis=dict(showgrid=True, zeroline=False),
-        yaxis=dict(showgrid=True, zeroline=False, autorange='reversed'),
-        height=400,
-        showlegend=False
-    )
-    
-    return fig
+# ---------------------------
+# Main content layout
+# ---------------------------
+left_col, right_col = st.columns([2, 1])
 
-def create_performance_chart(history):
-    """Create performance metrics chart"""
-    if len(history) == 0:
-        return None
-    
-    df = pd.DataFrame(history)
-    
-    fig = go.Figure()
-    
-    fig.add_trace(go.Scatter(
-        x=df['episode'],
-        y=df['reward'],
-        mode='lines+markers',
-        name='Reward',
-        line=dict(color='#667eea', width=3),
-        marker=dict(size=8)
-    ))
-    
-    fig.update_layout(
-        title="Episode Rewards Over Time",
-        xaxis_title="Episode",
-        yaxis_title="Reward",
-        height=300,
-        template="plotly_white"
-    )
-    
-    return fig
+with left_col:
+    st.markdown("## 🔎 Find Ambulance & Hospital")
+    st.markdown("<div class='big-card'>Choose severity and specialty, then click **Find Help**. The simulator will pick the best ambulance(s).</div>", unsafe_allow_html=True)
+    run = st.button("🚨 Find Help", help="Start simulation for the current emergency", use_container_width=True)
 
-# Main simulation controls
-col1, col2, col3 = st.columns([1, 1, 1])
+    if run:
+        # Run single "emergency" episode
+        for episode in range(n_episodes):
+            # Reset environment and get readable info
+            state = env.reset()
+            info = env.render_state_readable()
+            patient = info["patient"]
+            ambulances = info["ambulances"]
+            hospitals = info["hospitals"]
 
-with col1:
-    run_simulation = st.button("▶️ Run Simulation", use_container_width=True, type="primary")
-with col2:
-    if st.button("📊 View Analytics", use_container_width=True):
-        st.session_state.show_analytics = True
-with col3:
-    if st.button("💾 Export Results", use_container_width=True):
-        if st.session_state.simulation_history:
-            df = pd.DataFrame(st.session_state.simulation_history)
-            csv = df.to_csv(index=False)
-            st.download_button(
-                "Download CSV",
-                csv,
-                "simulation_results.csv",
-                "text/csv",
-                key='download-csv'
-            )
-
-st.divider()
-
-# Run simulation
-if run_simulation or auto_run:
-    progress_bar = st.progress(0)
-    status_text = st.empty()
-    
-    for episode_idx in range(n_episodes):
-        status_text.text(f"Running Episode {episode_idx + 1}/{n_episodes}...")
-        progress_bar.progress((episode_idx + 1) / n_episodes)
-        
-        # Reset environment
-        state = env.reset()
-        info = env.render_state_readable()
-        
-        # Create episode container
-        with st.container():
-            st.markdown(f"### 📋 Episode {episode_idx + 1}")
-            
-            # Create three columns for layout
-            col1, col2 = st.columns([2, 1])
-            
-            with col1:
-                # Patient Information
-                patient = info["patient"]
-                severity_colors = {0: "🟢", 1: "🟡", 2: "🔴"}
-                severity_names = {0: "Low", 1: "Medium", 2: "High"}
-                
-                st.markdown(f"""
-                <div class="info-box">
-                    <h4>🚨 Emergency Call</h4>
-                    <p><strong>Location:</strong> Zone {patient['zone']}</p>
-                    <p><strong>Severity:</strong> {severity_colors[patient['severity']]} {severity_names[patient['severity']]}</p>
-                    <p><strong>Required Specialty:</strong> {patient['required_specialty'] if patient['required_specialty'] else 'General'}</p>
-                    <p><strong>Timestamp:</strong> {datetime.now().strftime('%H:%M:%S')}</p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # Grid visualization
-                st.markdown("#### 🗺️ Grid View")
-                
-                # Get action first to show selected hospital
-                if Q is not None:
-                    row = Q[state]
-                    action = int(np.argmax(row))
+            # Decide action: use Q-table if available (simple argmax), else heuristic:
+            if Q is not None:
+                # clamp state index for safety
+                try:
+                    action_row = Q[state]
+                    action = int(np.argmax(action_row))
+                except Exception:
+                    action = np.random.randint(0, env.n_ambulances * env.n_hospitals)
+            else:
+                # Simple heuristic: pick ambulance with min distance to patient, and hospital that supports specialty and has beds
+                # We choose the ambul index and hospital index of shortest combined ETA
+                candidates = []
+                for a_idx, a in enumerate(ambulances):
+                    for h_idx, h in enumerate(hospitals):
+                        # distance: ambulance -> patient -> hospital (sum of hops)
+                        d1 = manhattan(a["zone"], patient["zone"], grid_cols)
+                        d2 = manhattan(patient["zone"], h["zone"], grid_cols)
+                        eta_total = eta_minutes(d1 + d2)
+                        # check specialty and bed availability (prefer matches)
+                        specialty_ok = True
+                        req = required_specialty.lower()
+                        if req != "general":
+                            # env stores specialties possibly in a dict; check keys case-insensitively
+                            specialty_ok = any(req == s.lower() and v for s, v in h["specialties"].items())
+                        bed_ok = h.get("available_beds", 0) > 0
+                        priority = (0 if specialty_ok else 1) + (0 if bed_ok else 2)
+                        candidates.append({
+                            "a_idx": a_idx, "h_idx": h_idx, "eta": eta_total, "priority": priority
+                        })
+                # sort by priority then eta
+                candidates_sorted = sorted(candidates, key=lambda x: (x["priority"], x["eta"]))
+                if candidates_sorted:
+                    top = candidates_sorted[0]
+                    action = top["a_idx"] * env.n_hospitals + top["h_idx"]
                 else:
-                    action = np.random.randint(0, n_ambulances * n_hospitals)
-                
-                amb_idx = action // env.n_hospitals
-                hosp_idx = action % env.n_hospitals
-                
-                patient_zone = patient["zone"]
-                ambulance_zone = info["ambulances"][amb_idx]["zone"]
-                hospital_zones = [h["zone"] for h in info["hospitals"]]
-                
-                grid_text = draw_grid_visual(patient_zone, ambulance_zone, hospital_zones, hosp_idx)
-                st.code(grid_text, language=None)
-                
-                # Distance heatmap
-                with st.expander("📍 View Distance Heatmap"):
-                    fig = create_distance_heatmap(
-                        patient_zone,
-                        [a["zone"] for a in info["ambulances"]],
-                        hospital_zones
-                    )
-                    st.plotly_chart(fig, use_container_width=True)
-            
-            with col2:
-                # Available Resources
-                st.markdown("#### 🚑 Available Ambulances")
-                for a in info['ambulances']:
-                    st.markdown(f"""
-                    <div style='background-color: #e3f2fd; padding: 0.5rem; border-radius: 5px; margin: 0.5rem 0;'>
-                        <strong>Ambulance {a['id']}</strong><br/>
-                        📍 Zone: {a['zone']}
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                st.markdown("#### 🏥 Hospital Status")
-                for h in info['hospitals']:
-                    bed_percentage = (h['available_beds'] / h['total_beds']) * 100
-                    color = '#4caf50' if bed_percentage > 50 else '#ff9800' if bed_percentage > 20 else '#f44336'
-                    
-                    specs = ', '.join([k.title() for k, v in h['specialties'].items() if v]) or 'General'
-                    
-                    st.markdown(f"""
-                    <div style='background-color: #f5f5f5; padding: 0.5rem; border-radius: 5px; margin: 0.5rem 0; border-left: 4px solid {color};'>
-                        <strong>Hospital {h['id']}</strong> (Zone {h['zone']})<br/>
-                        🛏️ Beds: {h['available_beds']}/{h['total_beds']}<br/>
-                        🏥 ICU: {h['icu_available']}<br/>
-                        💊 {specs}
-                    </div>
-                    """, unsafe_allow_html=True)
-            
-            # AI Decision
-            st.markdown("#### 🤖 AI Decision")
-            
-            col_a, col_b, col_c = st.columns(3)
-            with col_a:
-                st.metric("Selected Ambulance", f"🚑 {amb_idx}")
-            with col_b:
-                st.metric("Target Hospital", f"🏥 {hosp_idx}")
-            with col_c:
-                dist = abs((patient_zone // grid_cols) - (hospital_zones[hosp_idx] // grid_cols)) + \
-                       abs((patient_zone % grid_cols) - (hospital_zones[hosp_idx] % grid_cols))
-                st.metric("Distance", f"{dist} zones")
-            
-            # Execute action
+                    action = np.random.randint(0, env.n_ambulances * env.n_hospitals)
+
+            # Interpret action
+            amb_idx = action // env.n_hospitals
+            hosp_idx = action % env.n_hospitals
+
+            # Compute selected ambulance ETAs
+            patient_zone = patient["zone"]
+            amb_list_sorted, all_amb_sorted = get_top_ambulances(patient_zone, ambulances, top_k=top_k, cols=grid_cols)
+
+            # Display results
+            st.markdown(f"### 🧾 Emergency #{st.session_state.total_runs + 1} — {severity} severity")
+            st.markdown(f"**Required specialty:** {required_specialty}")
+            st.markdown(f"**Patient location:** Zone {patient_zone} — {datetime.now().strftime('%H:%M:%S')}")
+            st.divider()
+
+            # Show top ambulances (big readable cards)
+            st.markdown("#### 🚑 Nearby Ambulances")
+            amb_cols = st.columns(len(amb_list_sorted))
+            for idx, amb in enumerate(amb_list_sorted):
+                with amb_cols[idx]:
+                    # ETA color simple mapping
+                    eta = amb["eta_min"]
+                    if eta <= 10:
+                        color = "#2ecc71"  # green
+                        label = "Fast"
+                    elif eta <= 25:
+                        color = "#f39c12"  # orange
+                        label = "Okay"
+                    else:
+                        color = "#e74c3c"  # red
+                        label = "Slow"
+
+                    st.markdown(f"<div style='padding:10px;border-radius:8px;background:#ffffff;box-shadow:0 1px 3px rgba(0,0,0,0.06)'>"
+                                f"<h4 style='margin:0'>{amb['id']} {'' if idx>0 else ' (Selected)'}</h4>"
+                                f"<p style='margin:4px 0'><strong>ETA:</strong> <span class='eta-badge' style='background:{color};color:#fff'>{amb['eta_min']} min</span></p>"
+                                f"<p style='margin:4px 0'>Location: Zone {amb['zone']}</p>"
+                                f"</div>", unsafe_allow_html=True)
+
+            st.divider()
+
+            # Show hospitals list
+            st.markdown("#### 🏥 Nearby Hospitals")
+            # annotate hospitals with distance and specialty match
+            hosp_rows = []
+            for i, h in enumerate(hospitals):
+                d = manhattan(patient_zone, h["zone"], grid_cols)
+                eta_h = eta_minutes(d)
+                specialties_available = ", ".join([k.title() for k, v in h["specialties"].items() if v]) or "General"
+                specialty_match = required_specialty.lower() == "general" or any(required_specialty.lower() == k.lower() and v for k, v in h["specialties"].items())
+                hosp_rows.append({
+                    "id": h["id"],
+                    "zone": h["zone"],
+                    "eta_min": eta_h,
+                    "beds": f"{h.get('available_beds',0)}/{h.get('total_beds',0)}",
+                    "icu": h.get("icu_available", False),
+                    "specialties": specialties_available,
+                    "match": specialty_match
+                })
+            hosp_sorted = sorted(hosp_rows, key=lambda x: x["eta_min"])
+            for h in hosp_sorted:
+                match_text = "✅" if h["match"] else ""
+                highlight = "background:#e8f8f5;border-left:4px solid #0b9a78;padding:8px;border-radius:6px;margin-bottom:8px;" if h["match"] else "background:#fff;border:1px solid #eee;padding:8px;border-radius:6px;margin-bottom:8px;"
+                st.markdown(f"<div style='{highlight}'>"
+                            f"<strong>Hospital {h['id']} {match_text}</strong> — Zone {h['zone']}<br/>"
+                            f"ETA: <strong>{h['eta_min']} min</strong> &nbsp; • &nbsp; Beds: {h['beds']} &nbsp; • &nbsp; ICU: {'Yes' if h['icu'] else 'No'}<br/>"
+                            f"Specialties: {h['specialties']}"
+                            f"</div>", unsafe_allow_html=True)
+
+            # Optionally show grid visual for easy understanding
+            if show_grid_map:
+                st.markdown("#### 🗺️ Grid View (Patient / Ambulances / Hospitals)")
+                grid_text = draw_grid(patient_zone, ambulances, hospitals, selected_ambulance=ambulances[amb_idx]["id"], selected_hospital=hosp_idx, rows=grid_rows, cols=grid_cols)
+                st.code(grid_text)
+
+            # Simulate dispatch step (call env.step)
             ns, reward, done, step_info = env.step(action)
-            
-            # Result
-            if step_info.get('success', False):
-                st.markdown(f"""
-                <div class="success-card">
-                    <h4>✅ Dispatch Successful!</h4>
-                    <p><strong>Travel Time:</strong> {step_info.get('travel_time_min', 'N/A')} minutes</p>
-                    <p><strong>Distance Traveled:</strong> {step_info.get('dist_hops', 'N/A')} zones</p>
-                    <p><strong>Reward:</strong> {reward:.2f}</p>
-                </div>
-                """, unsafe_allow_html=True)
+
+            # Display outcome card
+            if step_info.get("success", False):
+                st.success(f"✅ Dispatch successful — Travel time: {step_info.get('travel_time_min', 'N/A')} min • Distance: {step_info.get('dist_hops', 'N/A')} hops")
                 st.session_state.success_count += 1
             else:
-                reason = step_info.get('reason', 'Unknown')
-                reason_text = {
-                    'no_beds': 'Hospital has no available beds',
-                    'no_specialty': 'Hospital lacks required specialty',
-                    'timeout': 'Response time exceeded threshold'
-                }.get(reason, reason)
-                
-                st.markdown(f"""
-                <div class="failure-card">
-                    <h4>❌ Dispatch Failed</h4>
-                    <p><strong>Reason:</strong> {reason_text}</p>
-                    <p><strong>Penalty:</strong> {reward:.2f}</p>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            # Detailed logs
-            if show_detailed_logs:
-                with st.expander("🔍 Detailed Logs"):
-                    st.json(step_info)
-            
-            # Save to history
-            st.session_state.simulation_history.append({
-                'episode': st.session_state.total_simulations + 1,
-                'reward': reward,
-                'success': step_info.get('success', False),
-                'travel_time': step_info.get('travel_time_min', 0),
-                'distance': step_info.get('dist_hops', 0),
-                'severity': patient['severity'],
-                'specialty': patient['required_specialty']
-            })
-            st.session_state.total_simulations += 1
-            
-            st.divider()
-            
-        # Animation delay
-        time.sleep(animation_speed)
-    
-    status_text.text("Simulation complete!")
-    progress_bar.empty()
-    
-    # Show summary
-    st.success(f"✅ Completed {n_episodes} episodes!")
-    
-    # Performance chart
-    if len(st.session_state.simulation_history) > 1:
-        st.markdown("### 📈 Performance Summary")
-        fig = create_performance_chart(st.session_state.simulation_history[-n_episodes:])
-        if fig:
-            st.plotly_chart(fig, use_container_width=True)
+                reason = step_info.get("reason", "Unknown")
+                st.error(f"❌ Dispatch failed — Reason: {reason}")
 
-# Analytics section
-if st.session_state.get('show_analytics', False) and len(st.session_state.simulation_history) > 0:
-    st.markdown("## 📊 Analytics Dashboard")
-    
+            # Save to session history
+            st.session_state.simulation_history.append({
+                "episode": st.session_state.total_runs + 1,
+                "reward": float(reward),
+                "success": bool(step_info.get("success", False)),
+                "travel_time": float(step_info.get("travel_time_min", 0)),
+                "distance": int(step_info.get("dist_hops", 0)),
+                "severity": severity,
+                "specialty": required_specialty
+            })
+            st.session_state.total_runs += 1
+
+            # short pause between episodes to simulate time (tuneable)
+            time.sleep(0.6)
+
+        st.success(f"Completed {n_episodes} simulation(s).")
+
+with right_col:
+    st.markdown("### 📊 Quick Stats")
+    st.markdown("<div class='big-card'>", unsafe_allow_html=True)
+    st.metric("Total Runs", st.session_state.total_runs)
+    sr = (st.session_state.success_count / st.session_state.total_runs * 100) if st.session_state.total_runs > 0 else 0.0
+    st.metric("Success Rate", f"{sr:.1f}%")
+    if st.session_state.simulation_history:
+        df_recent = pd.DataFrame(st.session_state.simulation_history[-10:])
+        st.markdown("#### Recent Results")
+        st.dataframe(df_recent[["episode", "success", "travel_time", "distance", "severity", "specialty"]].sort_values(by="episode", ascending=False).reset_index(drop=True))
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# ---------------------------
+# Analytics tab (optional)
+# ---------------------------
+if show_analytics and st.session_state.simulation_history:
+    st.markdown("---")
+    st.markdown("## Analytics")
     df = pd.DataFrame(st.session_state.simulation_history)
-    
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("Total Episodes", len(df))
-    with col2:
-        st.metric("Avg Reward", f"{df['reward'].mean():.2f}")
-    with col3:
-        st.metric("Success Rate", f"{df['success'].mean()*100:.1f}%")
-    with col4:
-        st.metric("Avg Travel Time", f"{df['travel_time'].mean():.1f} min")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        # Success rate by severity
-        severity_stats = df.groupby('severity')['success'].agg(['mean', 'count'])
-        fig = px.bar(
-            severity_stats.reset_index(),
-            x='severity',
-            y='mean',
-            title='Success Rate by Severity Level',
-            labels={'severity': 'Severity', 'mean': 'Success Rate'},
-            color='mean',
-            color_continuous_scale='RdYlGn'
-        )
-        st.plotly_chart(fig, use_container_width=True)
-    
-    with col2:
-        # Travel time distribution
-        fig = px.histogram(
-            df,
-            x='travel_time',
-            title='Travel Time Distribution',
-            labels={'travel_time': 'Travel Time (min)'},
-            nbins=20
-        )
-        st.plotly_chart(fig, use_container_width=True)
+
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Total Episodes", len(df))
+    col2.metric("Avg Travel Time (min)", f"{df['travel_time'].mean():.1f}")
+    col3.metric("Avg Distance (hops)", f"{df['distance'].mean():.1f}")
+
+    # Success by specialty
+    spec_stats = df.groupby("specialty")["success"].mean().reset_index().sort_values("success", ascending=False)
+    fig = px.bar(spec_stats, x="specialty", y="success", labels={"success": "Success Rate"}, title="Success Rate by Specialty")
+    st.plotly_chart(fig, use_container_width=True)
+
+    # Travel time distribution
+    fig2 = px.histogram(df, x="travel_time", nbins=20, title="Travel Time Distribution")
+    st.plotly_chart(fig2, use_container_width=True)
 
 # Footer
 st.markdown("---")
-st.markdown("""
-<div style='text-align: center; color: #666;'>
-    <p>🚑 Smart Ambulance Dispatch Simulator | Powered by Reinforcement Learning</p>
-    <p>Built with Streamlit | © 2025</p>
-</div>
-""", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center;color:#888'>Emergency Response Simulator • Academic Demo • Built with Streamlit</div>", unsafe_allow_html=True)
