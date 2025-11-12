@@ -14,7 +14,7 @@ st.set_page_config(page_title="Emergency Ambulance Finder", layout="centered")
 # Initialize Environment and Agent
 # --------------------------------------------------
 env = RuralEnv()
-agent = RLAgent(env)
+agent = QLearningAgent(env)
 
 # --------------------------------------------------
 # Header
@@ -162,5 +162,6 @@ else:
     st.info(
         "Select emergency details above and press **Find Help** to start the simulation."
     )
+
 
 
