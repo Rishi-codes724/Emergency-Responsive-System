@@ -34,33 +34,60 @@ st.markdown("""
         color: white;
     }
 
-        /* Title Styling */
-    h2 {
-        color: #00e6ac; /* bright teal for visibility */
-        text-align: center;
-        font-weight: 900;
-        font-size: 2.3em;
-        letter-spacing: 0.8px;
-        margin-bottom: 6px;
-        text-shadow: 0 0 15px rgba(0, 255, 204, 0.6), 0 0 25px rgba(0, 255, 255, 0.3);
-    }
+    /* Title Styling */
+h2 {
+    color: #00fff0; /* bright cyan */
+    text-align: center;
+    font-weight: 1000;
+    font-size: 3em; /* increased size */
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    text-shadow: 
+        0 0 20px rgba(0, 255, 240, 0.8),
+        0 0 40px rgba(0, 255, 255, 0.6),
+        0 0 60px rgba(0, 255, 255, 0.4);
+    animation: pulseGlow 2.5s infinite alternate;
+    position: relative;
+}
 
-    /* Keep emoji outside gradient */
-    h2::before {
-        content: "🚑 ";
-        font-size: 1.2em;
-        vertical-align: middle;
-        text-shadow: 0 0 10px rgba(0,255,255,0.5);
-    }
+/* Ambulance Emoji Before Title */
+h2::before {
+    content: "🚑 ";
+    font-size: 1.5em;
+    vertical-align: middle;
+    margin-right: 6px;
+    text-shadow: 0 0 20px rgba(0,255,255,0.8);
+}
 
-    .subtext {
-        text-align: center;
-        color: #a8e9ff; /* softer aqua for good contrast */
-        font-size: 16px;
-        font-weight: 500;
-        margin-top: -5px;
-        text-shadow: 0 0 6px rgba(0, 224, 255, 0.3);
+/* Soft pulsing glow effect */
+@keyframes pulseGlow {
+    0% {
+        text-shadow: 
+            0 0 15px rgba(0, 255, 240, 0.6),
+            0 0 30px rgba(0, 255, 255, 0.4);
+        transform: scale(1);
     }
+    100% {
+        text-shadow: 
+            0 0 30px rgba(0, 255, 255, 1),
+            0 0 60px rgba(0, 255, 255, 0.8);
+        transform: scale(1.02);
+    }
+}
+
+/* Subtext Styling */
+.subtext {
+    text-align: center;
+    color: #b8f3ff;
+    font-size: 18px;
+    font-weight: 600;
+    margin-top: -4px;
+    text-shadow: 
+        0 0 10px rgba(0, 255, 255, 0.4),
+        0 0 20px rgba(0, 255, 255, 0.2);
+}
+
 
     /* Select boxes */
     label {
@@ -144,7 +171,7 @@ agent = QLearningAgent(env.n_states, env.action_space)
 # --------------------------------------------------
 # Header Section
 # --------------------------------------------------
-st.markdown("<h2>🚑 Emergency Ambulance Dispatch System</h2>", unsafe_allow_html=True)
+st.markdown("<h2> Emergency Ambulance Dispatch System</h2>", unsafe_allow_html=True)
 st.markdown("<hr>", unsafe_allow_html=True)
 
 # --------------------------------------------------
@@ -237,4 +264,5 @@ if find_help:
 
 else:
     st.info("Select emergency details above and press **Find Help** to start the simulation.")
+
 
