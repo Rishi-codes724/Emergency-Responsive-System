@@ -14,43 +14,56 @@ st.set_page_config(
 )
 
 # --------------------------------------------------
-# Custom Styling with Improved Visibility
+# Custom Styling with Enhanced Readability
 # --------------------------------------------------
 st.markdown("""
     <style>
     /* Page background */
     [data-testid="stAppViewContainer"] {
         background: radial-gradient(circle at 30% 20%, #0f2027, #203a43, #2c5364);
-        color: #e3f2fd;
+        color: white;
         font-family: 'Poppins', sans-serif;
     }
+
     [data-testid="stHeader"] {
         background: rgba(0,0,0,0);
     }
+
     [data-testid="stSidebar"] {
         background: linear-gradient(180deg, #1a2a33, #11252f);
-        color: #e0f7fa;
+        color: white;
     }
 
-    /* Header text */
+    /* Title Styling */
     h2 {
-        color: #00e0ff !important;
+        background: linear-gradient(90deg, #00f5d4, #00b4d8, #0077b6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
         text-align: center;
-        font-weight: 800;
-        letter-spacing: 0.6px;
+        font-weight: 900;
+        font-size: 2.2em;
+        letter-spacing: 0.7px;
         margin-bottom: 5px;
-        text-shadow: 0 0 10px #00e0ff80;
-    }
-    h3 {
-        color: #64ffda !important;
-        font-weight: 700;
-        text-shadow: 0 0 6px #00e0ff40;
+        text-shadow: 0 0 15px rgba(0, 224, 255, 0.4);
     }
 
-    /* Dropdown text */
-    .stSelectbox label, .stSelectbox div[data-baseweb="select"] span {
-        color: #e3f2fd !important;
-        font-weight: 500;
+    .subtext {
+        text-align: center;
+        color: #caf0f8;
+        font-size: 15px;
+        margin-top: -8px;
+    }
+
+    /* Select boxes */
+    label {
+        color: #ffffff !important;
+        font-weight: 600 !important;
+    }
+
+    div[data-baseweb="select"] > div {
+        background-color: rgba(255, 255, 255, 0.1) !important;
+        color: #ffffff !important;
+        border-radius: 10px !important;
     }
 
     /* Buttons */
@@ -73,45 +86,36 @@ st.markdown("""
 
     /* Info Cards */
     .info-card {
-        background: rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.08);
         border-radius: 15px;
         padding: 14px 18px;
         margin-bottom: 12px;
         box-shadow: 0 0 15px rgba(0, 224, 255, 0.2);
         transition: all 0.25s ease-in-out;
-        color: #e8f9ff;
-        font-weight: 500;
+        color: #f1faff;
     }
     .info-card:hover {
         transform: translateY(-4px) scale(1.01);
         box-shadow: 0 0 20px rgba(0, 224, 255, 0.4);
     }
 
-    /* Best Option card */
+    /* Best Option Card */
     .best-option {
         background: linear-gradient(120deg, #1b4332, #2d6a4f);
         border-left: 6px solid #00ff9d;
         padding: 15px 20px;
         border-radius: 12px;
-        color: #caffbf;
+        color: #d9fdd3;
         font-weight: 500;
         box-shadow: 0 0 20px #00ff9d40;
     }
 
-    /* Text and subtext */
-    .subtext {
-        text-align: center;
-        color: #a8e6ff;
-        font-size: 15px;
-        margin-top: -8px;
-    }
     hr {
-        border: 1px solid rgba(255,255,255,0.15);
+        border: 1px solid rgba(255,255,255,0.1);
         margin-top: 20px;
         margin-bottom: 20px;
     }
 
-    /* Animations */
     @keyframes pulse {
         0% {box-shadow: 0 0 8px #00e0ff80;}
         50% {box-shadow: 0 0 16px #00e0ff;}
@@ -119,11 +123,6 @@ st.markdown("""
     }
     .pulse {
         animation: pulse 2s infinite;
-    }
-
-    /* Fix invisible Streamlit input labels */
-    label, span, div, p {
-        color: #e3f2fd !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -137,14 +136,14 @@ agent = QLearningAgent(env.n_states, env.action_space)
 # --------------------------------------------------
 # Header Section
 # --------------------------------------------------
-st.markdown("<h2>Emergency Ambulance Dispatch System</h2>", unsafe_allow_html=True)
+st.markdown("<h2>🚑 Emergency Ambulance Dispatch System</h2>", unsafe_allow_html=True)
 st.markdown("<p class='subtext'>AI-Powered Rural Emergency Response — Optimized using Q-Learning</p>", unsafe_allow_html=True)
 st.markdown("<hr>", unsafe_allow_html=True)
 
 # --------------------------------------------------
 # Step 1 – User Input
 # --------------------------------------------------
-st.markdown("### Describe the Emergency")
+st.markdown("### 🆘 Describe the Emergency")
 
 col1, col2 = st.columns(2)
 with col1:
@@ -155,7 +154,7 @@ with col2:
         ["General", "Cardiology", "Neurology", "Gynecology", "Orthopedic", "Pediatrics"],
     )
 
-find_help = st.button("Find Help", use_container_width=True)
+find_help = st.button("🚨 Find Help", use_container_width=True)
 
 # --------------------------------------------------
 # Step 2 – Simulation
@@ -183,34 +182,34 @@ if find_help:
                 break
 
         ambulances = [{"name": f"Ambulance {i+1}", "eta": random.randint(3, 20)} for i in range(env.n_ambulances)]
-        hospitals = [ {
+        hospitals = [{
             "name": f"Hospital {i+1}",
             "specialty": random.choice(["General", "Cardiology", "Neurology", "ICU", "Orthopedic", "Pediatrics"]),
             "distance": random.randint(10, 60),
-        } for i in range(env.n_hospitals) ]
+        } for i in range(env.n_hospitals)]
 
         ambulances.sort(key=lambda x: x["eta"])
         hospitals.sort(key=lambda x: x["distance"])
 
         st.markdown("<hr>", unsafe_allow_html=True)
-        st.markdown("### Nearby Ambulances")
+        st.markdown("### 🚑 Nearby Ambulances")
 
         for amb in ambulances:
             st.markdown(
                 f"<div class='info-card pulse'><b>{amb['name']}</b><br>"
-                f"<span style='color:#80e0ff; font-weight:600;'>ETA: {amb['eta']} mins</span></div>",
+                f"⏱️ ETA: <span style='color:#00e0ff; font-weight:600;'>{amb['eta']} mins</span></div>",
                 unsafe_allow_html=True,
             )
 
-        st.markdown("### Nearby Hospitals")
+        st.markdown("### 🏥 Nearby Hospitals")
 
         for hosp in hospitals:
-            highlight = "rgba(0,255,255,0.15)" if hosp["specialty"] == specialty else "rgba(255,255,255,0.08)"
+            highlight = "rgba(0,255,255,0.1)" if hosp["specialty"] == specialty else "rgba(255,255,255,0.05)"
             st.markdown(
                 f"<div class='info-card' style='background:{highlight};'>"
                 f"<b>{hosp['name']}</b><br>"
-                f"Specialty: <span style='color:#80ffea;'>{hosp['specialty']}</span><br>"
-                f"Distance: {hosp['distance']} mins</div>",
+                f"🩺 Specialty: {hosp['specialty']}<br>"
+                f"🚗 Distance: {hosp['distance']} mins</div>",
                 unsafe_allow_html=True,
             )
 
@@ -218,12 +217,12 @@ if find_help:
         best_hospital = hospitals[0]
 
         st.markdown("<hr>", unsafe_allow_html=True)
-        st.markdown("### Best Option Found")
+        st.markdown("### ✅ Best Option Found")
 
         st.markdown(
             f"<div class='best-option'>"
-            f"<b>{best_ambulance['name']}</b> will reach in <b>{best_ambulance['eta']} mins</b><br>"
-            f"Destination: <b>{best_hospital['name']}</b><br>"
+            f"🚑 <b>{best_ambulance['name']}</b> will reach in <b>{best_ambulance['eta']} mins</b><br>"
+            f"🏥 Destination: <b>{best_hospital['name']}</b><br>"
             f"Specialty: {best_hospital['specialty']} | Distance: {best_hospital['distance']} mins"
             f"</div>",
             unsafe_allow_html=True,
