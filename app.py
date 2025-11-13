@@ -14,76 +14,103 @@ st.set_page_config(
 )
 
 # --------------------------------------------------
-# Global Styling
+# Custom Styling with Dark Gradient Theme
 # --------------------------------------------------
 st.markdown("""
     <style>
     /* Page background */
-    body {
-        background: linear-gradient(135deg, #f0f7f4 0%, #dff6ff 100%);
+    [data-testid="stAppViewContainer"] {
+        background: radial-gradient(circle at 30% 20%, #0f2027, #203a43, #2c5364);
+        color: white;
         font-family: 'Poppins', sans-serif;
-        color: #1a1a1a;
     }
-    /* Header title */
+    [data-testid="stHeader"] {
+        background: rgba(0,0,0,0);
+    }
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #1a2a33, #11252f);
+        color: white;
+    }
+
+    /* Header text */
     h2 {
-        color: #0077b6 !important;
+        color: #00e0ff !important;
         text-align: center;
         font-weight: 800;
         letter-spacing: 0.6px;
         margin-bottom: 5px;
+        text-shadow: 0 0 10px #00e0ff80;
     }
     h3 {
-        color: #0077b6 !important;
+        color: #64ffda !important;
         font-weight: 700;
+        text-shadow: 0 0 6px #00e0ff40;
     }
+
     /* Buttons */
     .stButton > button {
-        background-color: #0077b6;
+        background: linear-gradient(90deg, #00e0ff, #0077b6);
         color: white;
         font-weight: 600;
-        border-radius: 10px;
+        border-radius: 12px;
         height: 3em;
         font-size: 16px;
         border: none;
-        transition: 0.3s;
+        box-shadow: 0 0 8px #00e0ff60;
+        transition: all 0.3s ease-in-out;
     }
     .stButton > button:hover {
-        background-color: #0096c7;
-        transform: scale(1.03);
+        background: linear-gradient(90deg, #00b4d8, #0077b6);
+        transform: scale(1.05);
+        box-shadow: 0 0 16px #00e0ff90;
     }
-    /* Cards */
+
+    /* Info Cards */
     .info-card {
-        background: linear-gradient(145deg, #ffffff, #f0f9ff);
-        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 15px;
         padding: 14px 18px;
         margin-bottom: 12px;
-        box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        box-shadow: 0 0 15px rgba(0, 224, 255, 0.2);
         transition: all 0.25s ease-in-out;
     }
     .info-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        transform: translateY(-4px) scale(1.01);
+        box-shadow: 0 0 20px rgba(0, 224, 255, 0.4);
     }
-    /* Best option card */
+
+    /* Best Option card */
     .best-option {
-        background: linear-gradient(135deg, #caffbf, #d8f3dc);
-        border-left: 6px solid #2d6a4f;
+        background: linear-gradient(120deg, #1b4332, #2d6a4f);
+        border-left: 6px solid #00ff9d;
         padding: 15px 20px;
         border-radius: 12px;
-        color: #1a1a1a;
+        color: #d9fdd3;
         font-weight: 500;
+        box-shadow: 0 0 20px #00ff9d40;
     }
-    /* Section dividers */
+
+    /* Text and subtext */
+    .subtext {
+        text-align: center;
+        color: #cdeefc;
+        font-size: 15px;
+        margin-top: -8px;
+    }
     hr {
-        border: 1px solid #caf0f8;
+        border: 1px solid rgba(255,255,255,0.1);
         margin-top: 20px;
         margin-bottom: 20px;
     }
-    /* Info text */
-    .subtext {
-        text-align: center;
-        color: #555;
-        font-size: 15px;
+
+    /* Animations */
+    @keyframes pulse {
+        0% {box-shadow: 0 0 8px #00e0ff80;}
+        50% {box-shadow: 0 0 16px #00e0ff;}
+        100% {box-shadow: 0 0 8px #00e0ff80;}
+    }
+    .pulse {
+        animation: pulse 2s infinite;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -98,7 +125,7 @@ agent = QLearningAgent(env.n_states, env.action_space)
 # Header Section
 # --------------------------------------------------
 st.markdown("<h2>🚑 Emergency Ambulance Dispatch System</h2>", unsafe_allow_html=True)
-st.markdown("<p class='subtext'>AI-Powered Rural Emergency Response System — Optimized using Q-Learning</p>", unsafe_allow_html=True)
+st.markdown("<p class='subtext'>AI-Powered Rural Emergency Response — Optimized using Q-Learning</p>", unsafe_allow_html=True)
 st.markdown("<hr>", unsafe_allow_html=True)
 
 # --------------------------------------------------
@@ -124,7 +151,6 @@ if find_help:
     with st.spinner("Analyzing available ambulances and hospitals..."):
         time.sleep(1.2)
 
-        # Reset and simulate
         state = env.reset()
         env.patient["severity"] = ["Low", "Medium", "High"].index(severity)
         env.patient["required_specialty"] = specialty if specialty != "General" else None
@@ -143,7 +169,6 @@ if find_help:
             if steps > 5:
                 break
 
-        # Randomized example data for display
         ambulances = [{"name": f"Ambulance {i+1}", "eta": random.randint(3, 20)} for i in range(env.n_ambulances)]
         hospitals = [{
             "name": f"Hospital {i+1}",
@@ -159,15 +184,15 @@ if find_help:
 
         for amb in ambulances:
             st.markdown(
-                f"<div class='info-card'><b>{amb['name']}</b><br>"
-                f"⏱️ ETA: <span style='color:#0077b6; font-weight:600;'>{amb['eta']} mins</span></div>",
+                f"<div class='info-card pulse'><b>{amb['name']}</b><br>"
+                f"⏱️ ETA: <span style='color:#00e0ff; font-weight:600;'>{amb['eta']} mins</span></div>",
                 unsafe_allow_html=True,
             )
 
         st.markdown("### 🏥 Nearby Hospitals")
 
         for hosp in hospitals:
-            highlight = "#e0f7ff" if hosp["specialty"] == specialty else "#ffffff"
+            highlight = "rgba(0,255,255,0.1)" if hosp["specialty"] == specialty else "rgba(255,255,255,0.05)"
             st.markdown(
                 f"<div class='info-card' style='background:{highlight};'>"
                 f"<b>{hosp['name']}</b><br>"
