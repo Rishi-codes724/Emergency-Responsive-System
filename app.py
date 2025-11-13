@@ -10,6 +10,49 @@ from env import RuralEnv
 # --------------------------------------------------
 st.set_page_config(page_title="Emergency Ambulance Dispatch System", layout="centered")
 
+# Add professional background and fonts
+st.markdown("""
+    <style>
+    body {
+        background-color: #f5f7fa;
+        font-family: 'Segoe UI', sans-serif;
+    }
+    h2, h3 {
+        font-family: 'Poppins', sans-serif;
+        color: #1a1a1a;
+    }
+    .stApp {
+        background: linear-gradient(145deg, #fdfdfd, #f3f6f9);
+        color: #333;
+    }
+    div[data-testid="stMarkdownContainer"] {
+        font-size: 17px;
+        line-height: 1.5;
+    }
+    .result-box {
+        background-color: #ffffff;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+        border-radius: 12px;
+        padding: 12px 15px;
+        margin-bottom: 10px;
+    }
+    .highlight {
+        background-color: #d4f8d4;
+    }
+    .btn-primary {
+        background-color: #ff4d4d;
+        color: white;
+        border-radius: 10px;
+        padding: 0.5em 1em;
+        border: none;
+        font-weight: 600;
+    }
+    .btn-primary:hover {
+        background-color: #ff3333;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # --------------------------------------------------
 # Initialize Environment and Agent
 # --------------------------------------------------
@@ -21,7 +64,8 @@ agent = QLearningAgent(env.n_states, env.action_space)
 # --------------------------------------------------
 st.markdown(
     """
-    <h2 style='text-align:center; color:#ff4d4d;'>🚑 Emergency Ambulance Dispatch System</h2>
+    <h2 style='text-align:center; color:#ff4d4d; font-weight:700;'>🚑 Emergency Ambulance Dispatch System</h2>
+    <p style='text-align:center; color:#4a4a4a;'>AI-Powered Emergency Response for Rural Areas</p>
     """,
     unsafe_allow_html=True,
 )
@@ -29,7 +73,7 @@ st.markdown(
 # --------------------------------------------------
 # Step 1 – User Input
 # --------------------------------------------------
-st.markdown("### 🆘Describe the Emergency")
+st.markdown("### 🆘 Describe the Emergency")
 
 col1, col2 = st.columns(2)
 with col1:
@@ -104,7 +148,7 @@ if find_help:
         for amb in ambulances:
             st.markdown(
                 f"""
-                <div style='background-color:#fff5f5; padding:10px; border-radius:10px; margin-bottom:8px;'>
+                <div class='result-box'>
                     <b>{amb['name']}</b> — 
                     <span style='color:#ff4d4d;'>{amb['eta']} mins away</span>
                 </div>
@@ -114,10 +158,10 @@ if find_help:
 
         st.markdown("### 🏥 Nearby Hospitals")
         for hosp in hospitals:
-            highlight = "#d4f8d4" if hosp["specialty"] == specialty else "#f9f9f9"
+            highlight = "highlight" if hosp["specialty"] == specialty else ""
             st.markdown(
                 f"""
-                <div style='background-color:{highlight}; padding:10px; border-radius:10px; margin-bottom:8px;'>
+                <div class='result-box {highlight}'>
                     <b>{hosp['name']}</b><br>
                     🩺 Specialty: {hosp['specialty']}<br>
                     ⏱️ Distance: {hosp['distance']} mins
@@ -136,17 +180,17 @@ if find_help:
         st.markdown("### ✅ Best Option Found")
         st.success(
             f"""
-            🚑 **{best_ambulance['name']}** will reach you in **{best_ambulance['eta']} mins**  
-            🏥 Nearest hospital: **{best_hospital['name']}**  
+            🚑 <b>{best_ambulance['name']}</b> will reach you in <b>{best_ambulance['eta']} mins</b><br>
+            🏥 Nearest hospital: <b>{best_hospital['name']}</b><br>
             (Specialty: {best_hospital['specialty']}, {best_hospital['distance']} mins away)
-            """
+            """,
+            unsafe_allow_html=True,
         )
 
         st.markdown(
-            "<p style='text-align:center; color:gray;'>Simulation complete — academic demo only.</p>",
+            "<p style='text-align:center; color:gray; font-size:14px;'>Simulation complete — academic demo only.</p>",
             unsafe_allow_html=True,
         )
 
 else:
     st.info("Select emergency details above and press **Find Help** to start the simulation.")
-
