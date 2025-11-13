@@ -1,4 +1,3 @@
-# app.py
 import streamlit as st
 import random
 import time
@@ -8,47 +7,46 @@ from env import RuralEnv
 # --------------------------------------------------
 # Page Setup
 # --------------------------------------------------
-st.set_page_config(page_title="Emergency Ambulance Dispatch System", layout="centered")
+st.set_page_config(
+    page_title="Emergency Ambulance Dispatch System",
+    layout="centered",
+    page_icon="🚑",
+)
 
-# Add professional background and fonts
+# Custom CSS styling for a professional UI
 st.markdown("""
     <style>
     body {
-        background-color: #f5f7fa;
+        background: linear-gradient(135deg, #f9fafc 0%, #f0f4ff 100%);
         font-family: 'Segoe UI', sans-serif;
     }
-    h2, h3 {
-        font-family: 'Poppins', sans-serif;
-        color: #1a1a1a;
+    h2 {
+        color: #e63946 !important;
+        text-align: center;
+        font-weight: 700;
+        letter-spacing: 0.5px;
     }
-    .stApp {
-        background: linear-gradient(145deg, #fdfdfd, #f3f6f9);
-        color: #333;
+    .stSelectbox label, .stButton button, .stMarkdown {
+        font-size: 16px !important;
     }
-    div[data-testid="stMarkdownContainer"] {
-        font-size: 17px;
-        line-height: 1.5;
-    }
-    .result-box {
+    .ambulance-card, .hospital-card {
         background-color: #ffffff;
-        box-shadow: 0 3px 8px rgba(0,0,0,0.1);
         border-radius: 12px;
-        padding: 12px 15px;
+        padding: 12px 16px;
         margin-bottom: 10px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        transition: 0.2s ease;
     }
-    .highlight {
-        background-color: #d4f8d4;
+    .ambulance-card:hover, .hospital-card:hover {
+        transform: scale(1.01);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.15);
     }
-    .btn-primary {
-        background-color: #ff4d4d;
-        color: white;
+    .best-option {
+        background-color: #e6ffee;
+        border-left: 6px solid #00b050;
+        padding: 15px;
         border-radius: 10px;
-        padding: 0.5em 1em;
-        border: none;
-        font-weight: 600;
-    }
-    .btn-primary:hover {
-        background-color: #ff3333;
+        font-size: 17px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -62,13 +60,9 @@ agent = QLearningAgent(env.n_states, env.action_space)
 # --------------------------------------------------
 # Header
 # --------------------------------------------------
-st.markdown(
-    """
-    <h2 style='text-align:center; color:#ff4d4d; font-weight:700;'>🚑 Emergency Ambulance Dispatch System</h2>
-    <p style='text-align:center; color:#4a4a4a;'>AI-Powered Emergency Response for Rural Areas</p>
-    """,
-    unsafe_allow_html=True,
-)
+st.markdown("<h2>🚑 Emergency Ambulance Dispatch System</h2>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center; color:#555;'>AI-powered dispatch optimization for rural healthcare emergencies</p>", unsafe_allow_html=True)
+st.markdown("---")
 
 # --------------------------------------------------
 # Step 1 – User Input
@@ -90,10 +84,9 @@ find_help = st.button("🚨 Find Help", use_container_width=True)
 # Step 2 – Run Simulation
 # --------------------------------------------------
 if find_help:
-    with st.spinner("Finding the nearest ambulances and hospitals..."):
+    with st.spinner("Analyzing and dispatching nearest resources..."):
         time.sleep(1.2)
 
-        # Reset environment and set patient manually
         state = env.reset()
         env.patient["severity"] = ["Low", "Medium", "High"].index(severity)
         env.patient["required_specialty"] = specialty if specialty != "General" else None
@@ -114,81 +107,54 @@ if find_help:
             if steps > 5:
                 break
 
-        # --------------------------------------------------
-        # Step 3 – Simulated Display Data
-        # --------------------------------------------------
-        ambulances = []
-        for i in range(env.n_ambulances):
-            ambulances.append(
-                {"name": f"Ambulance {i+1}", "eta": random.randint(3, 20)}
-            )
+        ambulances = [{"name": f"Ambulance {i+1}", "eta": random.randint(3, 20)} for i in range(env.n_ambulances)]
+        hospitals = [{
+            "name": f"Hospital {i+1}",
+            "specialty": random.choice(["General", "Cardiology", "Neurology", "ICU", "Orthopedic", "Pediatrics"]),
+            "distance": random.randint(10, 60),
+        } for i in range(env.n_hospitals)]
 
-        hospitals = []
-        for i in range(env.n_hospitals):
-            hosp = env.hospitals[i]
-            hospitals.append(
-                {
-                    "name": f"Hospital {i+1}",
-                    "specialty": random.choice(
-                        ["General", "Cardiology", "Neurology", "ICU", "Orthopedic", "Pediatrics"]
-                    ),
-                    "distance": random.randint(10, 60),
-                }
-            )
-
-        ambulances = sorted(ambulances, key=lambda x: x["eta"])
-        hospitals = sorted(hospitals, key=lambda x: x["distance"])
+        ambulances.sort(key=lambda x: x["eta"])
+        hospitals.sort(key=lambda x: x["distance"])
 
         # --------------------------------------------------
         # Step 4 – Display Results
         # --------------------------------------------------
         st.markdown("---")
         st.markdown("### 🚑 Nearby Ambulances")
-
         for amb in ambulances:
             st.markdown(
-                f"""
-                <div class='result-box'>
-                    <b>{amb['name']}</b> — 
-                    <span style='color:#ff4d4d;'>{amb['eta']} mins away</span>
-                </div>
-                """,
+                f"<div class='ambulance-card'><b>{amb['name']}</b> — "
+                f"<span style='color:#e63946;'>{amb['eta']} mins away</span></div>",
                 unsafe_allow_html=True,
             )
 
         st.markdown("### 🏥 Nearby Hospitals")
         for hosp in hospitals:
-            highlight = "highlight" if hosp["specialty"] == specialty else ""
+            highlight = "#e6f7ff" if hosp["specialty"] == specialty else "#ffffff"
             st.markdown(
-                f"""
-                <div class='result-box {highlight}'>
-                    <b>{hosp['name']}</b><br>
-                    🩺 Specialty: {hosp['specialty']}<br>
-                    ⏱️ Distance: {hosp['distance']} mins
-                </div>
-                """,
+                f"<div class='hospital-card' style='background-color:{highlight};'>"
+                f"<b>{hosp['name']}</b><br>"
+                f"🩺 Specialty: {hosp['specialty']}<br>"
+                f"⏱️ Distance: {hosp['distance']} mins</div>",
                 unsafe_allow_html=True,
             )
 
-        # --------------------------------------------------
-        # Step 5 – Best Option Summary
-        # --------------------------------------------------
         best_ambulance = ambulances[0]
         best_hospital = hospitals[0]
 
         st.markdown("---")
         st.markdown("### ✅ Best Option Found")
-        st.success(
-            f"""
-            🚑 <b>{best_ambulance['name']}</b> will reach you in <b>{best_ambulance['eta']} mins</b><br>
-            🏥 Nearest hospital: <b>{best_hospital['name']}</b><br>
-            (Specialty: {best_hospital['specialty']}, {best_hospital['distance']} mins away)
-            """,
+        st.markdown(
+            f"<div class='best-option'>🚑 <b>{best_ambulance['name']}</b> will reach in "
+            f"<b>{best_ambulance['eta']} mins</b><br>"
+            f"🏥 Hospital: <b>{best_hospital['name']}</b> "
+            f"({best_hospital['specialty']}, {best_hospital['distance']} mins away)</div>",
             unsafe_allow_html=True,
         )
 
         st.markdown(
-            "<p style='text-align:center; color:gray; font-size:14px;'>Simulation complete — academic demo only.</p>",
+            "<p style='text-align:center; color:gray; font-size:14px;'>Simulation complete — for research demo only.</p>",
             unsafe_allow_html=True,
         )
 
