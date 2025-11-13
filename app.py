@@ -1,222 +1,91 @@
-import streamlit as st
-import random
-import time
-from rl_agent import QLearningAgent
-from env import RuralEnv
+import React from "react";
+import { motion } from "framer-motion";
+import { Activity, Truck, Hospital, Brain } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
-# --------------------------------------------------
-# Page Setup
-# --------------------------------------------------
-st.set_page_config(
-    page_title="Emergency Ambulance Dispatch System",
-    layout="centered",
-    page_icon="🚑",
-)
+export default function AmbulanceSimulationUI() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-100 to-blue-200 flex flex-col items-center justify-center p-6">
+      <motion.h1
+        className="text-4xl font-bold text-indigo-800 mb-6 tracking-tight drop-shadow-sm"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        Smart Ambulance Dispatch Simulation
+      </motion.h1>
 
-# --------------------------------------------------
-# Custom Styling with Dark Gradient Theme
-# --------------------------------------------------
-st.markdown("""
-    <style>
-    /* Page background */
-    [data-testid="stAppViewContainer"] {
-        background: radial-gradient(circle at 30% 20%, #0f2027, #203a43, #2c5364);
-        color: white;
-        font-family: 'Poppins', sans-serif;
-    }
-    [data-testid="stHeader"] {
-        background: rgba(0,0,0,0);
-    }
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #1a2a33, #11252f);
-        color: white;
-    }
+      <motion.div
+        className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl w-full"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+      >
+        {/* Patient Card */}
+        <Card className="bg-white/40 backdrop-blur-md shadow-md border-none hover:shadow-lg transition-all">
+          <CardContent className="p-6 text-center">
+            <Activity className="w-12 h-12 mx-auto text-rose-600 mb-4" />
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">
+              Patient Alert
+            </h2>
+            <p className="text-gray-600">
+              A patient appears in Zone 3 - Severity: <strong>Critical</strong>
+            </p>
+          </CardContent>
+        </Card>
 
-    /* Header text */
-    h2 {
-        color: #00e0ff !important;
-        text-align: center;
-        font-weight: 800;
-        letter-spacing: 0.6px;
-        margin-bottom: 5px;
-        text-shadow: 0 0 10px #00e0ff80;
-    }
-    h3 {
-        color: #64ffda !important;
-        font-weight: 700;
-        text-shadow: 0 0 6px #00e0ff40;
-    }
+        {/* Ambulance Card */}
+        <Card className="bg-white/40 backdrop-blur-md shadow-md border-none hover:shadow-lg transition-all">
+          <CardContent className="p-6 text-center">
+            <Truck className="w-12 h-12 mx-auto text-emerald-600 mb-4" />
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">
+              Ambulance Status
+            </h2>
+            <p className="text-gray-600">
+              Nearest ambulance is <strong>2 km away</strong>.
+            </p>
+          </CardContent>
+        </Card>
 
-    /* Buttons */
-    .stButton > button {
-        background: linear-gradient(90deg, #00e0ff, #0077b6);
-        color: white;
-        font-weight: 600;
-        border-radius: 12px;
-        height: 3em;
-        font-size: 16px;
-        border: none;
-        box-shadow: 0 0 8px #00e0ff60;
-        transition: all 0.3s ease-in-out;
-    }
-    .stButton > button:hover {
-        background: linear-gradient(90deg, #00b4d8, #0077b6);
-        transform: scale(1.05);
-        box-shadow: 0 0 16px #00e0ff90;
-    }
+        {/* Hospital Card */}
+        <Card className="bg-white/40 backdrop-blur-md shadow-md border-none hover:shadow-lg transition-all">
+          <CardContent className="p-6 text-center">
+            <Hospital className="w-12 h-12 mx-auto text-blue-600 mb-4" />
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">
+              Hospital Availability
+            </h2>
+            <p className="text-gray-600">
+              ICU Beds: <strong>Available</strong> | Specialty: <strong>Cardio</strong>
+            </p>
+          </CardContent>
+        </Card>
+      </motion.div>
 
-    /* Info Cards */
-    .info-card {
-        background: rgba(255, 255, 255, 0.08);
-        border-radius: 15px;
-        padding: 14px 18px;
-        margin-bottom: 12px;
-        box-shadow: 0 0 15px rgba(0, 224, 255, 0.2);
-        transition: all 0.25s ease-in-out;
-    }
-    .info-card:hover {
-        transform: translateY(-4px) scale(1.01);
-        box-shadow: 0 0 20px rgba(0, 224, 255, 0.4);
-    }
+      {/* Control Buttons */}
+      <motion.div
+        className="mt-8 flex gap-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.6 }}
+      >
+        <Button className="bg-indigo-700 hover:bg-indigo-800 text-white rounded-xl px-6 py-2 transition-all">
+          Start Simulation
+        </Button>
+        <Button className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-6 py-2 transition-all">
+          Next Episode
+        </Button>
+      </motion.div>
 
-    /* Best Option card */
-    .best-option {
-        background: linear-gradient(120deg, #1b4332, #2d6a4f);
-        border-left: 6px solid #00ff9d;
-        padding: 15px 20px;
-        border-radius: 12px;
-        color: #d9fdd3;
-        font-weight: 500;
-        box-shadow: 0 0 20px #00ff9d40;
-    }
-
-    /* Text and subtext */
-    .subtext {
-        text-align: center;
-        color: #cdeefc;
-        font-size: 15px;
-        margin-top: -8px;
-    }
-    hr {
-        border: 1px solid rgba(255,255,255,0.1);
-        margin-top: 20px;
-        margin-bottom: 20px;
-    }
-
-    /* Animations */
-    @keyframes pulse {
-        0% {box-shadow: 0 0 8px #00e0ff80;}
-        50% {box-shadow: 0 0 16px #00e0ff;}
-        100% {box-shadow: 0 0 8px #00e0ff80;}
-    }
-    .pulse {
-        animation: pulse 2s infinite;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-# --------------------------------------------------
-# Initialize Environment and Agent
-# --------------------------------------------------
-env = RuralEnv(n_hospitals=2, n_ambulances=random.randint(1, 3))
-agent = QLearningAgent(env.n_states, env.action_space)
-
-# --------------------------------------------------
-# Header Section
-# --------------------------------------------------
-st.markdown("<h2>🚑 Emergency Ambulance Dispatch System</h2>", unsafe_allow_html=True)
-st.markdown("<p class='subtext'>AI-Powered Rural Emergency Response — Optimized using Q-Learning</p>", unsafe_allow_html=True)
-st.markdown("<hr>", unsafe_allow_html=True)
-
-# --------------------------------------------------
-# Step 1 – User Input
-# --------------------------------------------------
-st.markdown("### 🆘 Describe the Emergency")
-
-col1, col2 = st.columns(2)
-with col1:
-    severity = st.selectbox("Emergency Severity", ["Low", "Medium", "High"], index=1)
-with col2:
-    specialty = st.selectbox(
-        "Required Specialty",
-        ["General", "Cardiology🫀", "Neurology🧠", "Gynecology🤰🏻", "Orthopedic🦴🦵🏻", "Pediatrics👶🏻"],
-    )
-
-find_help = st.button("🚨 Find Help", use_container_width=True)
-
-# --------------------------------------------------
-# Step 2 – Simulation
-# --------------------------------------------------
-if find_help:
-    with st.spinner("Analyzing available ambulances and hospitals..."):
-        time.sleep(1.2)
-
-        state = env.reset()
-        env.patient["severity"] = ["Low", "Medium", "High"].index(severity)
-        env.patient["required_specialty"] = specialty if specialty != "General" else None
-
-        done = False
-        total_reward = 0
-        steps = 0
-
-        while not done:
-            action = agent.select_action(state)
-            next_state, reward, done, info = env.step(action)
-            agent.learn(state, action, reward, next_state)
-            state = next_state
-            total_reward += reward
-            steps += 1
-            if steps > 5:
-                break
-
-        ambulances = [{"name": f"Ambulance {i+1}", "eta": random.randint(3, 20)} for i in range(env.n_ambulances)]
-        hospitals = [{
-            "name": f"Hospital {i+1}",
-            "specialty": random.choice(["General", "Cardiology", "Neurology", "ICU", "Orthopedic", "Pediatrics"]),
-            "distance": random.randint(10, 60),
-        } for i in range(env.n_hospitals)]
-
-        ambulances.sort(key=lambda x: x["eta"])
-        hospitals.sort(key=lambda x: x["distance"])
-
-        st.markdown("<hr>", unsafe_allow_html=True)
-        st.markdown("### 🚑 Nearby Ambulances")
-
-        for amb in ambulances:
-            st.markdown(
-                f"<div class='info-card pulse'><b>{amb['name']}</b><br>"
-                f"⏱️ ETA: <span style='color:#00e0ff; font-weight:600;'>{amb['eta']} mins</span></div>",
-                unsafe_allow_html=True,
-            )
-
-        st.markdown("### 🏥 Nearby Hospitals")
-
-        for hosp in hospitals:
-            highlight = "rgba(0,255,255,0.1)" if hosp["specialty"] == specialty else "rgba(255,255,255,0.05)"
-            st.markdown(
-                f"<div class='info-card' style='background:{highlight};'>"
-                f"<b>{hosp['name']}</b><br>"
-                f"🩺 Specialty: {hosp['specialty']}<br>"
-                f"🚗 Distance: {hosp['distance']} mins</div>",
-                unsafe_allow_html=True,
-            )
-
-        best_ambulance = ambulances[0]
-        best_hospital = hospitals[0]
-
-        st.markdown("<hr>", unsafe_allow_html=True)
-        st.markdown("### ✅ Best Option Found")
-
-        st.markdown(
-            f"<div class='best-option'>"
-            f"🚑 <b>{best_ambulance['name']}</b> will reach in <b>{best_ambulance['eta']} mins</b><br>"
-            f"🏥 Destination: <b>{best_hospital['name']}</b><br>"
-            f"Specialty: {best_hospital['specialty']} | Distance: {best_hospital['distance']} mins"
-            f"</div>",
-            unsafe_allow_html=True,
-        )
-
-        st.markdown("<p class='subtext'>Simulation complete — for academic demonstration only.</p>", unsafe_allow_html=True)
-
-else:
-    st.info("Select emergency details above and press **Find Help** to start the simulation.")
+      {/* Q-Learning Status */}
+      <motion.div
+        className="mt-10 text-center text-gray-700"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.8 }}
+      >
+        <Brain className="w-8 h-8 inline-block text-indigo-700 mr-2" />
+        <span className="font-medium">Agent Learning Progress: 85%</span>
+      </motion.div>
+    </div>
+  );
+}
