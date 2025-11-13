@@ -34,24 +34,32 @@ st.markdown("""
         color: white;
     }
 
-    /* Title Styling */
+        /* Title Styling */
     h2 {
-        background: linear-gradient(90deg, #00f5d4, #00b4d8, #0077b6);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: #00e6ac; /* bright teal for visibility */
         text-align: center;
         font-weight: 900;
-        font-size: 2.2em;
-        letter-spacing: 0.7px;
-        margin-bottom: 5px;
-        text-shadow: 0 0 15px rgba(0, 224, 255, 0.4);
+        font-size: 2.3em;
+        letter-spacing: 0.8px;
+        margin-bottom: 6px;
+        text-shadow: 0 0 15px rgba(0, 255, 204, 0.6), 0 0 25px rgba(0, 255, 255, 0.3);
+    }
+
+    /* Keep emoji outside gradient */
+    h2::before {
+        content: "🚑 ";
+        font-size: 1.2em;
+        vertical-align: middle;
+        text-shadow: 0 0 10px rgba(0,255,255,0.5);
     }
 
     .subtext {
         text-align: center;
-        color: #caf0f8;
-        font-size: 15px;
-        margin-top: -8px;
+        color: #a8e9ff; /* softer aqua for good contrast */
+        font-size: 16px;
+        font-weight: 500;
+        margin-top: -5px;
+        text-shadow: 0 0 6px rgba(0, 224, 255, 0.3);
     }
 
     /* Select boxes */
@@ -137,7 +145,6 @@ agent = QLearningAgent(env.n_states, env.action_space)
 # Header Section
 # --------------------------------------------------
 st.markdown("<h2>🚑 Emergency Ambulance Dispatch System</h2>", unsafe_allow_html=True)
-st.markdown("<p class='subtext'>AI-Powered Rural Emergency Response — Optimized using Q-Learning</p>", unsafe_allow_html=True)
 st.markdown("<hr>", unsafe_allow_html=True)
 
 # --------------------------------------------------
@@ -228,7 +235,6 @@ if find_help:
             unsafe_allow_html=True,
         )
 
-        st.markdown("<p class='subtext'>Simulation complete — for academic demonstration only.</p>", unsafe_allow_html=True)
-
 else:
     st.info("Select emergency details above and press **Find Help** to start the simulation.")
+
