@@ -184,7 +184,7 @@ with col1:
 with col2:
     specialty = st.selectbox(
         "Required Specialty",
-        ["General", "Cardiology", "Neurology", "Gynecology", "Orthopedic", "Pediatrics"],
+        ["General", "Cardiology🫀", "Neurology🧠", "Gynecology🤰🏻", "Orthopedic🦴🦵🏻", "Pediatrics👶🏻"],
     )
 
 find_help = st.button("🚨 Find Help", use_container_width=True)
@@ -263,6 +263,7 @@ if find_help:
 
 else:
     st.info("Select emergency details above and press **Find Help** to start the simulation.")
+
 
 
 
