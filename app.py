@@ -8,7 +8,7 @@ from env import RuralEnv
 # --------------------------------------------------
 # Page Setup
 # --------------------------------------------------
-st.set_page_config(page_title="Emergency Ambulance Finder", layout="centered")
+st.set_page_config(page_title="Emergency Ambulance Dispatch System", layout="centered")
 
 # --------------------------------------------------
 # Initialize Environment and Agent
@@ -21,8 +21,7 @@ agent = QLearningAgent(env.n_states, env.action_space)
 # --------------------------------------------------
 st.markdown(
     """
-    <h2 style='text-align:center; color:#ff4d4d;'>🚑 Emergency Ambulance Finder</h2>
-    <p style='text-align:center; font-size:18px;'>Emergency Response System for Rural Areas</p>
+    <h2 style='text-align:center; color:#ff4d4d;'>🚑 Emergency Ambulance Dispatch System</h2>
     """,
     unsafe_allow_html=True,
 )
@@ -30,7 +29,7 @@ st.markdown(
 # --------------------------------------------------
 # Step 1 – User Input
 # --------------------------------------------------
-st.markdown("### 🆘 Step 1: Describe the Emergency")
+st.markdown("### 🆘Describe the Emergency")
 
 col1, col2 = st.columns(2)
 with col1:
@@ -38,7 +37,7 @@ with col1:
 with col2:
     specialty = st.selectbox(
         "Required Specialty",
-        ["General", "Cardiology", "Neurology", "Gynecology", "ICU", "Orthopedic", "Pediatrics"],
+        ["General", "Cardiology🫀", "Neurology🧠", "Gynecology🤰🏻", "Orthopedic🦴🦵🏻", "Pediatrics👶🏻"],
     )
 
 find_help = st.button("🚨 Find Help", use_container_width=True)
@@ -150,3 +149,4 @@ if find_help:
 
 else:
     st.info("Select emergency details above and press **Find Help** to start the simulation.")
+
