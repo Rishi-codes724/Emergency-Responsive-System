@@ -35,9 +35,7 @@ st.markdown("""
     }
 /* Title Styling */
 h2 {
-    background: linear-gradient(90deg, #ff80ab, #ff4d6d, #ff1e56);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: #00fff0; /* bright cyan */
     text-align: center;
     font-weight: 1000;
     font-size: 3em; /* increased size */
@@ -45,9 +43,9 @@ h2 {
     margin-bottom: 8px;
     text-transform: uppercase;
     text-shadow: 
-        0 0 25px rgba(255, 102, 153, 0.7),
-        0 0 50px rgba(255, 51, 102, 0.5),
-        0 0 70px rgba(255, 0, 85, 0.3);
+        0 0 20px rgba(0, 255, 240, 0.8),
+        0 0 40px rgba(0, 255, 255, 0.6),
+        0 0 60px rgba(0, 255, 255, 0.4);
     animation: pulseGlow 2.5s infinite alternate;
     position: relative;
 }
@@ -55,43 +53,39 @@ h2 {
 /* Ambulance Emoji Before Title */
 h2::before {
     content: "🚑 ";
-    font-size: 1.8em;
+    font-size: 1.5em;
     vertical-align: middle;
-    margin-right: 8px;
-    text-shadow: 
-        0 0 20px rgba(255, 80, 120, 0.9),
-        0 0 40px rgba(255, 80, 120, 0.6);
+    margin-right: 6px;
+    text-shadow: 0 0 20px rgba(0,255,255,0.8);
 }
 
 /* Soft pulsing glow effect */
 @keyframes pulseGlow {
     0% {
         text-shadow: 
-            0 0 20px rgba(255, 80, 120, 0.5),
-            0 0 40px rgba(255, 51, 102, 0.3);
+            0 0 15px rgba(0, 255, 240, 0.6),
+            0 0 30px rgba(0, 255, 255, 0.4);
         transform: scale(1);
     }
     100% {
         text-shadow: 
-            0 0 35px rgba(255, 80, 120, 0.9),
-            0 0 70px rgba(255, 51, 102, 0.7);
-        transform: scale(1.03);
+            0 0 30px rgba(0, 255, 255, 1),
+            0 0 60px rgba(0, 255, 255, 0.8);
+        transform: scale(1.02);
     }
 }
 
 /* Subtext Styling */
 .subtext {
     text-align: center;
-    color: #ffe6eb;
+    color: #b8f3ff;
     font-size: 18px;
     font-weight: 600;
     margin-top: -4px;
     text-shadow: 
-        0 0 12px rgba(255, 128, 171, 0.5),
-        0 0 25px rgba(255, 102, 153, 0.3);
+        0 0 10px rgba(0, 255, 255, 0.4),
+        0 0 20px rgba(0, 255, 255, 0.2);
 }
-
-    
 
 
     /* Select boxes */
@@ -269,6 +263,7 @@ if find_help:
 
 else:
     st.info("Select emergency details above and press **Find Help** to start the simulation.")
+
 
 
 
