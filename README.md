@@ -32,7 +32,7 @@ Hospital availability (beds, ICU, specialties)
 The agent selects:
   - Which ambulance should respond
   - Which hospital the patient should be taken to
-- Reward System
+## Reward System
 | Scenario | Reward |
 |---------|--------|
 | Successful treatment | +50 |
