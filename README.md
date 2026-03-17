@@ -1,18 +1,18 @@
-#🚑 Emergency Ambulance Dispatch System using Reinforcement Learning
+# 🚑 Emergency Ambulance Dispatch System using Reinforcement Learning
 
-##📌 Project Overview
+## 📌 Project Overview
 
 Emergency response time is critical in saving lives. This project proposes an AI-based ambulance dispatch system that uses Reinforcement Learning (RL) to assign the most suitable ambulance and hospital to a patient in emergency situations.
 The system simulates a rural healthcare network and learns optimal dispatch strategies through interaction with the environment.
 
-##🎯 Objective
+## 🎯 Objective
 
 - Assign the nearest available ambulance to emergency patients.
 - Select a hospital based on availability and patient needs.
 - Minimize response time and dispatch delays.
 - Improve decision making using Reinforcement Learning.
 
-##🧠 Reinforcement Learning Approach
+## 🧠 Reinforcement Learning Approach
 
 We use a Q-Learning agent to learn the best dispatch strategy.
 - Agent:
